@@ -1,5 +1,3 @@
-// src/navigation/MainTabNavigator.tsx
-
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types/navigation';
@@ -15,6 +13,10 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const MainTabNavigator: React.FC = () => {
   return (
+    /* 
+      REMOVED <ScrollProvider> from here. 
+      It is now in RootNavigator.tsx to ensure 100% synchronization.
+    */
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false }}

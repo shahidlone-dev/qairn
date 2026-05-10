@@ -13,7 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { getTheme, fonts, fontSizes, spacing, radii, colors } from '../../theme/theme';
+import * as MediaLibrary from 'expo-media-library'; // 👈 IMPORT ADDED HERE
+
+import { getTheme, fonts, fontSizes, spacing, radii, colors } from '../../types/theme';
 import { RootStackScreenProps } from '../../types/navigation';
 
 type Props = RootStackScreenProps<'Onboarding'>;
@@ -56,6 +58,9 @@ export const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
     try {
       // Trigger native notification permission modal
       await Notifications.requestPermissionsAsync();
+      
+      // 👈 ADDED: Trigger media library permission modal
+      await MediaLibrary.requestPermissionsAsync();
     } catch (_) {
       // Permission denied or error — continue anyway
     }

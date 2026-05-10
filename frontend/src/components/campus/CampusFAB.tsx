@@ -1,206 +1,264 @@
 // src/components/campus/CampusFAB.tsx
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-} from 'react-native';
+import React from 'react';
+import { TouchableOpacity, StyleSheet, useColorScheme, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
-// FIX: Imported static 'colors' to guarantee icon tints never resolve to transparent
-import { getTheme, colors, fonts, fontSizes, spacing, radii } from '../../theme/theme';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as Haptics from 'expo-haptics';
+import Animated, { 
+  SharedValue, 
+  useAnimatedStyle, 
+  useSharedValue,
+  useAnimatedReaction,
+  withSpring, 
+  withTiming, 
+  Easing 
+} from 'react-native-reanimated';
 
-const FLOAT_OPTIONS = [
-  { icon: 'videocam' as const, label: 'Reel',  colorKey: 'purple' as const },
-  { icon: 'camera'   as const, label: 'Photo', colorKey: 'teal'   as const },
-];
+import { getTheme, spacing, radii } from '../../types/theme';
+import { RootStackParamList } from '../../types/navigation';
 
 interface Props {
-  bottomOffset?:    number;
+  bottomOffset?: number;
+  isScrollingDown: SharedValue<boolean>;
   onRegisterClose?: (closeFn: () => void) => void;
 }
 
-export const CampusFAB: React.FC<Props> = ({
-  bottomOffset    = 0,
-  onRegisterClose,
+export const CampusFAB: React.FC<Props> = ({ 
+  bottomOffset = 0, 
+  isScrollingDown 
 }) => {
-  const T = getTheme(useColorScheme());
+  const colorScheme = useColorScheme();
+  const T = getTheme(colorScheme);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  
+  // ── Theme Overrides for Opaque Sub-buttons ────────────────────────────────
+  const isDark = colorScheme === 'dark';
+  const subBtnBgColor = isDark ? '#2C2C2E' : '#FFFFFF'; 
+  const subIconColor = isDark ? '#FFFFFF' : '#1C1C1E';
 
-  // FIX: Safely map to the guaranteed static color palette
-  const floatColors = { purple: colors.purple, teal: colors.teal };
+  const isExpanded = useSharedValue(false);
 
-  const [open, setOpen] = useState(false);
-  const openRef         = useRef(false);
+  // Auto-close the menu if the user starts scrolling down
+  useAnimatedReaction(
+    () => isScrollingDown.value,
+    (scrollingDown) => {
+      if (scrollingDown && isExpanded.value) {
+        isExpanded.value = false;
+      }
+    }
+  );
 
-  const floatAnims = useRef(FLOAT_OPTIONS.map(() => new Animated.Value(0))).current;
+  // ── Interaction Logic ─────────────────────────────────────────────────────
+  const handleMainPress = () => {
+    if (!isExpanded.value) {
+      // 1. Menu is Closed -> Open it
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      isExpanded.value = true;
+    } else {
+      // 2. Menu is Open -> Main button acts as the STORY button!
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      isExpanded.value = false;
+      navigation.navigate('StoryGallery'); // Navigates to the new Gallery module
+    }
+  };
 
-  // ── Animate open / close ──────────────────────────────────────────────────
-  const animate = useCallback((opening: boolean) => {
-    openRef.current = opening;
-    setOpen(opening);
+  const handlePostPress = () => {
+    isExpanded.value = false;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate('CreatePost'); 
+  };
 
-    Animated.parallel(
-      floatAnims.map((anim, i) =>
-        Animated.spring(anim, {
-          toValue:         opening ? 1 : 0,
-          useNativeDriver: true,
-          damping:         18,
-          stiffness:       240,
-          delay: opening ? i * 50 : (FLOAT_OPTIONS.length - 1 - i) * 40,
-        })
-      )
-    ).start();
-  }, [floatAnims]);
+  // ── Animations ────────────────────────────────────────────────────────────
+  const containerStyle = useAnimatedStyle(() => {
+    const isHidden = isScrollingDown.value;
+    return {
+      transform: [
+        { 
+          scale: withSpring(isHidden ? 0 : 1, {
+            damping: 15,
+            stiffness: 150,
+            mass: 0.8,
+            overshootClamping: isHidden, 
+          }) 
+        }
+      ],
+      opacity: withTiming(isHidden ? 0 : 1, { 
+        duration: 200,
+        easing: Easing.out(Easing.quad)
+      }),
+    };
+  });
 
-  // ── Register close so CampusScreen can call on scroll ────────────────────
-  useEffect(() => {
-    onRegisterClose?.(() => {
-      if (openRef.current) animate(false);
-    });
-  }, [animate, onRegisterClose]);
+  // Post Button pops out above (-75px)
+  const postBtnStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: withSpring(isExpanded.value ? -75 : 0) },
+      { scale: withSpring(isExpanded.value ? 1 : 0.4) }
+    ],
+    opacity: withTiming(isExpanded.value ? 1 : 0, { duration: 150 }),
+  }));
+
+  // Icon Crossfade: Fades OUT the '+'
+  const plusIconStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    opacity: withTiming(isExpanded.value ? 0 : 1, { duration: 150 }),
+    transform: [
+      { scale: withSpring(isExpanded.value ? 0.2 : 1) },
+      { rotate: withSpring(isExpanded.value ? '90deg' : '0deg') }
+    ]
+  }));
+
+  // Icon Crossfade: Fades IN the 'Story' icon
+  const storyIconStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    opacity: withTiming(isExpanded.value ? 1 : 0, { duration: 150 }),
+    transform: [
+      { scale: withSpring(isExpanded.value ? 1 : 0.2) },
+      { rotate: withSpring(isExpanded.value ? '0deg' : '-90deg') }
+    ]
+  }));
+
+  // Text Labels slide and fade in
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(isExpanded.value ? 1 : 0, { duration: 150 }),
+    transform: [{ translateX: withSpring(isExpanded.value ? 0 : 10) }]
+  }));
 
   return (
-    <View
-      style={[styles.container, { bottom: bottomOffset + spacing.lg }]}
+    <Animated.View
+      style={[
+        styles.container, 
+        { bottom: bottomOffset + 90 },
+        containerStyle 
+      ]}
       pointerEvents="box-none"
     >
-      {/* ── Floating options (Photo above Post, Reel above Photo) ─────────── */}
-      {FLOAT_OPTIONS.map((opt, i) => {
-        const anim = floatAnims[i];
+      {/* ── Main Button Label ("Add your story") ── */}
+      <Animated.Text 
+        numberOfLines={1}
+        style={[
+          styles.label, 
+          styles.mainLabel, 
+          { backgroundColor: subBtnBgColor, color: subIconColor }, 
+          labelStyle
+        ]}
+        pointerEvents="none"
+      >
+        Add your story
+      </Animated.Text>
 
-        const GAP      = 70;
-        const distance = GAP * (i + 1);
+      {/* POP-OUT BUTTON: Posts */}
+      <Animated.View style={[styles.subBtnWrapper, postBtnStyle]}>
+        
+        {/* ── Sub Button Label ("Create a post") ── */}
+        <Animated.Text 
+          numberOfLines={1}
+          style={[
+            styles.label, 
+            styles.subLabel, 
+            { backgroundColor: subBtnBgColor, color: subIconColor }, 
+            labelStyle
+          ]}
+          pointerEvents="none"
+        >
+          Create a post
+        </Animated.Text>
 
-        const translateY = anim.interpolate({
-          inputRange:  [0, 1],
-          outputRange: [0, -distance],
-        });
-        const scale = anim.interpolate({
-          inputRange:  [0, 1],
-          outputRange: [0.4, 1],
-        });
-        const opacity = anim;
+        <TouchableOpacity 
+          style={[styles.subBtn, { backgroundColor: subBtnBgColor }]} 
+          onPress={handlePostPress}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="camera-outline" size={22} color={subIconColor} />
+        </TouchableOpacity>
+      </Animated.View>
 
-        return (
-          <Animated.View
-            key={opt.label}
-            style={[
-              styles.floatWrap,
-              {
-                opacity,
-                transform: [{ translateY }, { scale }],
-              },
-            ]}
-            pointerEvents={open ? 'auto' : 'none'}
-          >
-            {/* Label */}
-            <View style={[styles.floatLabel, { backgroundColor: T.bgCard, borderColor: T.borderSubtle }]}>
-              <Text style={[styles.floatLabelText, { color: T.text, fontFamily: fonts.semibold, fontSize: fontSizes.sm }]}>
-                {opt.label}
-              </Text>
-            </View>
-
-            {/* Icon button */}
-            <TouchableOpacity
-              style={[styles.floatBtn, { backgroundColor: T.bgCard, borderColor: T.borderSubtle }]}
-              onPress={() => animate(false)}
-              activeOpacity={0.85}
-            >
-              <Ionicons name={opt.icon} size={22} color={floatColors[opt.colorKey]} />
-            </TouchableOpacity>
-          </Animated.View>
-        );
-      })}
-
-      {/* ── Main button — shows + when closed, "Post" when open ───────────── */}
+      {/* MAIN BUTTON: Toggles menu, then becomes Story Button */}
       <TouchableOpacity
         style={[styles.mainBtn, { backgroundColor: T.accent }]}
-        onPress={() => animate(!openRef.current)}
-        activeOpacity={0.85}
+        onPress={handleMainPress}
+        activeOpacity={0.9}
       >
-        {open ? (
-          <View style={styles.postInner}>
-            <Ionicons name="create" size={18} color="#fff" />
-            <Text style={[styles.postLabel, { fontFamily: fonts.semibold, fontSize: fontSizes.sm }]}>
-              Post
-            </Text>
-          </View>
-        ) : (
-          <Ionicons name="add" size={30} color="#fff" />
-        )}
+        {/* The '+' Icon (Visible when closed) */}
+        <Animated.View style={plusIconStyle}>
+          <Ionicons name="add" size={34} color="#fff" style={styles.icon} />
+        </Animated.View>
+
+        {/* The 'Story' Icon (Visible when expanded) */}
+        <Animated.View style={storyIconStyle}>
+          <Ionicons name="aperture-outline" size={28} color="#fff" style={styles.icon} />
+        </Animated.View>
       </TouchableOpacity>
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    position:   'absolute',
-    right:      spacing.base,
+    position: 'absolute',
+    right: spacing.base,
     alignItems: 'center',
-    zIndex:     100,
+    justifyContent: 'center',
+    zIndex: 100,
   },
-
-  // Main FAB
   mainBtn: {
-    height:         56,
-    minWidth:       56,
-    borderRadius:   radii.pill,
-    alignItems:     'center',
+    height: 60,
+    width: 60,
+    borderRadius: radii.pill,
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    shadowColor:    '#D85A30',
-    shadowOffset:   { width: 0, height: 4 },
-    shadowOpacity:  0.4,
-    shadowRadius:   8,
-    elevation:      10,
+    shadowColor: '#D85A30', 
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 12,
+    zIndex: 10,
   },
-  postInner: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    gap:            6,
-  },
-  postLabel: {
-    color: '#fff',
-  },
-
-  // Floating options
-  floatWrap: {
-    position:      'absolute',
-    bottom:        0,
-    right:         4, // FIX: Mathematically centers the 48px mini-buttons over the 56px main button
-    flexDirection: 'row',
-    alignItems:    'center',
-    gap:           spacing.sm,
-  },
-  floatBtn: {
-    width:          48,
-    height:         48,
-    borderRadius:   radii.pill,
-    alignItems:     'center',
+  subBtnWrapper: {
+    position: 'absolute',
+    alignItems: 'center',
     justifyContent: 'center',
-    borderWidth:    StyleSheet.hairlineWidth,
-    // FIX: Shadow ensures they don't blend into light backgrounds
-    shadowColor:    '#000',
-    shadowOffset:   { width: 0, height: 3 },
-    shadowOpacity:  0.12,
-    shadowRadius:   6,
-    elevation:      6,
+    zIndex: 5,
   },
-  floatLabel: {
-    paddingHorizontal: spacing.md,
-    paddingVertical:   spacing.xs,
-    borderRadius:      radii.md,
-    borderWidth:       StyleSheet.hairlineWidth,
-    // FIX: Shadow ensures labels are legible over the feed in light mode
-    shadowColor:       '#000',
-    shadowOffset:      { width: 0, height: 2 },
-    shadowOpacity:     0.1,
-    shadowRadius:      4,
-    elevation:         4,
+  subBtn: {
+    height: 48,
+    width: 48,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
   },
-  floatLabelText: {},
+  icon: {
+    marginLeft: 0, 
+  },
+  label: {
+    position: 'absolute',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    overflow: 'hidden',
+    width: 130, // Forces the pill to be wide enough so text doesn't wrap
+    textAlign: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  subLabel: {
+    right: 56, 
+  },
+  mainLabel: {
+    right: 72, 
+    bottom: 16, 
+    zIndex: 5,
+  }
 });

@@ -1,13 +1,25 @@
 // backend/src/routes/user.routes.js
 'use strict';
+
 const express  = require('express');
 const router   = express.Router();
-const { protect } = require('../middleware/auth.middleware');
+const ctrl     = require('../controllers/user.controller');
+const { protect, optionalAuth } = require('../middleware/auth.middleware');
 
-router.get('/me',           protect, (req, res) => res.json({ success: true, message: 'GET /users/me — TODO' }));
-router.put('/me',           protect, (req, res) => res.json({ success: true, message: 'PUT /users/me — TODO' }));
-router.get('/:username',            (req, res) => res.json({ success: true, message: 'GET /users/:username — TODO' }));
-router.post('/:id/circle',  protect, (req, res) => res.json({ success: true, message: 'POST /users/:id/circle — TODO' }));
-router.delete('/:id/circle',protect, (req, res) => res.json({ success: true, message: 'DELETE /users/:id/circle — TODO' }));
+router.get ('/me',                protect,      ctrl.getMe);
+router.put ('/me',                protect,      ctrl.updateMe);
+
+// /me/circle returns the viewer's "following" list. Registered alongside
+// /me so the literal "me" segment is matched before any /:username route.
+router.get ('/me/circle',         protect,      ctrl.getMyCircle);
+
+// IMPORTANT: /search must be registered BEFORE /:username, otherwise Express
+// would treat the literal "search" as a username and route to getProfile.
+router.get ('/search',            protect,      ctrl.searchUsers);
+
+router.get ('/:username',         optionalAuth, ctrl.getProfile);
+router.get ('/:username/posts',   optionalAuth, ctrl.getUserPosts);
+router.post('/:id/circle',        protect,      ctrl.follow);
+router.delete('/:id/circle',      protect,      ctrl.unfollow);
 
 module.exports = router;

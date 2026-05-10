@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
-import { getTheme, fonts, fontSizes, radii, spacing } from '../../theme/theme';
+import { getTheme, fonts, fontSizes, radii, spacing } from '../../types/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';

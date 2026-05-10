@@ -1,45 +1,19 @@
 // backend/src/routes/upload.routes.js
 'use strict';
-const express  = require('express');
-const router   = express.Router();
-const { protect }                    = require('../middleware/auth.middleware');
-const { uploadLimiter }              = require('../middleware/rateLimit.middleware');
-const { multerUpload, uploadToCloud }= require('../middleware/upload.middleware');
 
-// Single file upload — avatar
-router.post('/avatar',
-  protect,
-  uploadLimiter,
-  multerUpload.single('file'),
-  uploadToCloud('avatar'),
-  (req, res) => res.json({ success: true, data: req.uploadedFile })
-);
+const express          = require('express');
+const router           = express.Router();
+const UploadController = require('../controllers/upload.controller');
+const { protect }      = require('../middleware/auth.middleware');
+const { uploadPostMedia, uploadAvatar } = require('../middleware/upload.middleware');
 
-// Post image/video
-router.post('/post',
-  protect,
-  uploadLimiter,
-  multerUpload.single('file'),
-  uploadToCloud('post'),
-  (req, res) => res.json({ success: true, data: req.uploadedFile })
-);
+router.use(protect);
 
-// Note PDF
-router.post('/note',
-  protect,
-  uploadLimiter,
-  multerUpload.single('file'),
-  uploadToCloud('note'),
-  (req, res) => res.json({ success: true, data: req.uploadedFile })
-);
+// Step 2: upload media linked to a draft post_id
+// POST /api/upload/post-media?postId=:uuid
+router.post('/post-media', uploadPostMedia, UploadController.postMedia);
 
-// Market item image
-router.post('/item',
-  protect,
-  uploadLimiter,
-  multerUpload.single('file'),
-  uploadToCloud('item'),
-  (req, res) => res.json({ success: true, data: req.uploadedFile })
-);
+// Avatar — independent of the post flow
+router.post('/avatar', uploadAvatar, UploadController.avatar);
 
 module.exports = router;

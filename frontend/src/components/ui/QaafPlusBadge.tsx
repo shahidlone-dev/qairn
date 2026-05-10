@@ -3,7 +3,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { useColorScheme } from 'react-native';
-import { getTheme, fonts, fontSizes, radii } from '../../theme/theme';
+import { getTheme, fonts, fontSizes, radii } from '../../types/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type BadgeSize = 'xs' | 'sm' | 'md';

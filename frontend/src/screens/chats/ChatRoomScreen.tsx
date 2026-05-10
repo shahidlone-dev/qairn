@@ -18,7 +18,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
-import { getTheme, fonts, fontSizes, spacing, radii } from '../../theme/theme';
+import { getTheme, fonts, fontSizes, spacing, radii } from '../../types/theme';
 import { Avatar } from '../../components/ui';
 import { MOCK_MESSAGES, Message, MessageStatus } from '../../constants/mockMessages';
 import { RootStackScreenProps } from '../../types/navigation';
@@ -289,6 +289,10 @@ const MessageBubble: React.FC<{
 
   return (
     <View>
+      {/* 
+        Because it's an inverted list, the View renders normally inside.
+        So Date Header sits nicely above the message bubble visually! 
+      */}
       {showDate && (
         <View style={styles.dateHeaderWrap}>
           <View style={[styles.dateHeader, { backgroundColor: T.bgInput }]}>
@@ -311,7 +315,6 @@ const MessageBubble: React.FC<{
           </View>
         </Animated.View>
 
-        {/* Removed the onAvatarPress navigation block entirely from inside the chat */}
         {!isMe && (
           isConsecutive ? (
             <View style={{ width: 28 }} />
@@ -435,7 +438,8 @@ export const ChatRoomScreen: React.FC<Props> = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
   const { name } = route.params;
 
-  const [messages,   setMessages]   = useState<Message[]>(MOCK_MESSAGES);
+  // 1. REVERSE INITIAL DATA: Index 0 is now the newest message!
+  const [messages,   setMessages]   = useState<Message[]>([...MOCK_MESSAGES].reverse());
   const [inputText,  setInputText]  = useState('');
   const [replyTo,    setReplyTo]    = useState<Message | null>(null);
   
@@ -502,19 +506,22 @@ export const ChatRoomScreen: React.FC<Props> = ({ route, navigation }) => {
         text:     replyTo.text ?? replyTo.fileName ?? 'Voice message',
       } : undefined,
     };
-    setMessages(prev => [...prev, msg]);
+    
+    // 2. PREPEND DATA: Add the new message to index 0
+    setMessages(prev => [msg, ...prev]);
     setInputText('');
     setReplyTo(null);
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
+    
+    // 3. SCROLL FIX: In an inverted list, the bottom is offset: 0
+    setTimeout(() => listRef.current?.scrollToOffset({ offset: 0, animated: true }), 80);
   };
 
-  // ── FIX: Cleanest KeyboardAvoidingView Stack for iOS ──
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // Resets margin calculations
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} 
       >
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: T.border, backgroundColor: T.bg }]}>
@@ -523,7 +530,6 @@ export const ChatRoomScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
-            {/* Targeted Navigation: Only clicking Avatar & Name navigates to profile */}
             <TouchableOpacity
               style={styles.headerTargetTap}
               activeOpacity={0.8}
@@ -544,15 +550,21 @@ export const ChatRoomScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Messages List */}
+        {/* 4. THE MAGIC FIX: Inverted FlatList */}
         <FlatList
           ref={listRef}
           data={messages}
+          inverted // <-- THIS FLIPS EVERYTHING
           keyExtractor={item => item.id}
           renderItem={({ item, index }) => {
-            const prevMsg = messages[index - 1];
-            const showDate = !prevMsg || !isSameDay(prevMsg.timestamp, item.timestamp);
-            const isConsecutive = prevMsg && prevMsg.senderId === item.senderId && !showDate;
+            // Because it's inverted, the message "above" it visually is actually older (index + 1)
+            const olderMsg = messages[index + 1];
+            
+            // Show Date Header above this message if it's the oldest of the day
+            const showDate = !olderMsg || !isSameDay(olderMsg.timestamp, item.timestamp);
+            
+            // Group bubbles tighter if the older message is from the same sender on the same day
+            const isConsecutive = olderMsg && olderMsg.senderId === item.senderId && !showDate;
 
             return (
               <MessageBubble
@@ -568,7 +580,7 @@ export const ChatRoomScreen: React.FC<Props> = ({ route, navigation }) => {
           }}
           contentContainerStyle={styles.messageList}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+          // Removed onContentSizeChange because inverted lists anchor to bottom automatically!
         />
 
         {/* Reply Context Bar */}
@@ -588,7 +600,7 @@ export const ChatRoomScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         )}
 
-        {/* Input Bar - Safely padding the bottom to handle home indicator dynamically */}
+        {/* Input Bar */}
         <View style={[
           styles.inputBar, 
           { 
@@ -605,7 +617,6 @@ export const ChatRoomScreen: React.FC<Props> = ({ route, navigation }) => {
             <Ionicons name="add" size={28} color={T.text3} />
           </TouchableOpacity>
 
-          {/* FIX: Optimized flex properties for flawless multi-line text expansion */}
           <View style={[styles.inputWrap, { backgroundColor: T.bgInput }]}>
             <TextInput
               ref={inputRef}
@@ -691,7 +702,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems:    'center',
     gap:           spacing.sm,
-    alignSelf:     'flex-start', // Constrains tap area tightly to content
+    alignSelf:     'flex-start',
   },
   headerRight: {
     flexDirection: 'row',
@@ -817,7 +828,6 @@ const styles = StyleSheet.create({
     gap:               spacing.sm,
   },
 
-  // ── Input Bar Refinements ──
   inputBar: {
     flexDirection:     'row',
     alignItems:        'flex-end',
@@ -841,7 +851,7 @@ const styles = StyleSheet.create({
     flex:               1,
     fontSize:           fontSizes.md,
     minHeight:          40,
-    maxHeight:          120, // Prevents text from pushing screen up infinitely
+    maxHeight:          120,
     paddingTop:         Platform.OS === 'ios' ? 10 : 8,
     paddingBottom:      Platform.OS === 'ios' ? 10 : 8,
   },
@@ -908,7 +918,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Attachment Sheet Specific
   attachGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -930,7 +939,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Dropdown Menu Styles
   dropScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.05)' },
   dropMenu: {
     position: 'absolute',

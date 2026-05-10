@@ -9,6 +9,7 @@ cloudinary.config({
   api_key:    process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
   secure:     true,
+  timeout:    600000, // ⏳ SLEDGEHAMMER: 10 minutes global timeout (600,000 ms)
 });
 
 // ── Upload presets per type ───────────────────────────────────────────────────
@@ -18,6 +19,7 @@ const folders = {
   note:    'qaaf/notes',
   item:    'qaaf/items',
   message: 'qaaf/messages',
+  story:   'qaaf/stories',
 };
 
 // ── Upload helper ─────────────────────────────────────────────────────────────

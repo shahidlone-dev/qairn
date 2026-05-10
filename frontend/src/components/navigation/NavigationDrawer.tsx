@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
-import { getTheme, fonts, fontSizes, spacing, radii } from '../../theme/theme';
+import { getTheme, fonts, fontSizes, spacing, radii } from '../../types/theme';
 import { Avatar, QaafPlusBadge } from '../ui';
 import { CURRENT_USER } from '../../constants/mockFeed';
 

@@ -35,12 +35,18 @@ export type User = {
 };
 
 // ─── Post ─────────────────────────────────────────────────────────────────────
+// src/types/api.types.ts  (Post type excerpt — replace just the Post type)
+
 export type Post = {
   id:            string;
   user:          Pick<User, 'id' | 'username' | 'avatar_url' | 'dept' | 'is_premium' | 'is_verified'>;
   content:       string;
   media_url?:    string;
   media_type?:   'image' | 'video' | 'reel';
+  // ✅ Dimensions from Cloudinary, stored in DB, returned in every post response.
+  // Null for text-only posts or legacy posts created before this migration.
+  media_width?:  number | null;
+  media_height?: number | null;
   like_count:    number;
   comment_count: number;
   share_count:   number;

@@ -22,14 +22,27 @@ export type RootStackParamList = {
   ResetPassword:  { phone: string };
 
   // App
-  MainTabs:       NavigatorScreenParams<MainTabParamList>;
-  PostDetail:     { postId: string };
-  ChatRoom:       { chatId: string; name: string };
-  MarketListing:  { listingId: string };
-  Notifications:  undefined;
-  Settings:       undefined;
-  Search:         undefined;
-  Profile:        { userId: string };
+  MainTabs:        NavigatorScreenParams<MainTabParamList>;
+  PostDetail:      { postId: string };
+  PostImageViewer: { postId: string };
+  ChatRoom:        { chatId: string; name: string };
+  ChatRequests: undefined;
+  BlockedChats: undefined;
+  NewGroup:     undefined;
+  MarketListing:   { listingId: string };
+  Notifications:   undefined;
+  Settings:        undefined;
+  Search:          undefined;
+  Profile:         { userId?: string; username?: string };
+  ProfileOptions:  undefined;
+  EditProfile:     undefined;
+  CreatePost:      { mode: 'text' | 'image' | 'video' };
+
+  // Story screens — all three were missing, causing runtime crashes
+  StoryViewer:  { userId: string };
+  StoryGallery: undefined;
+  StoryCamera:  undefined;
+  StoryPreview: { mediaUri: string; mediaType: 'image' | 'video' | 'text' };
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> =

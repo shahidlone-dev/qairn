@@ -1,206 +1,140 @@
+/**
+ * src/theme/theme.ts  —  COMPATIBILITY SHIM
+ *
+ * File location: frontend/src/theme/theme.ts
+ * (NOT inside src/theme/src/ — that folder is the package internals, don't touch it)
+ *
+ * All 37 app files import from this path:
+ *   import { getTheme, fonts, fontSizes, spacing, radii, colors } from '../../theme/theme'
+ *
+ * This shim satisfies every one of those imports by mapping the new
+ * theme tokens back to the flat names the old code expects.
+ * The real package code stays untouched inside src/theme/src/.
+ */
+
 import { ColorSchemeName } from 'react-native';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  qaaf v2 — Design System
-//  Primary: Coral #D85A30
-//  Base:    Pure #ffffff (light) / Pure #000000 (dark)
-// ─────────────────────────────────────────────────────────────────────────────
+// Import from the real package internals — note ./src/ prefix
+import { lightTheme, darkTheme } from './src/theme';
+import type { Theme as BaseTheme } from './src/theme';
+import { palette, gradients } from './src/tokens/palette';
+import { fontFamily, fontWeight, textStyles } from './src/tokens/typography';
+import { space } from './src/tokens/spacing';
+import { radius } from './src/tokens/radius';
+import { elevation } from './src/tokens/elevation';
+import { duration, easing, spring } from './src/tokens/motion';
+import { zIndex } from './src/tokens/zIndex';
+import { iconSize } from './src/tokens/iconSize';
 
-// ─── Semantic / fixed colors (same in both modes) ────────────────────────────
-export const colors = {
-  // ── Brand ──────────────────────────────────────────────────────────────────
-  coral:         '#D85A30',   // primary CTA, like, brand accent
-  coralLight:    '#F0997B',   // pressed state / icon tint
-  coralDark:     '#993C1D',   // active / deep pressed
-  coralMuted:    'rgba(216,90,48,0.12)', // subtle bg tint (badges, highlights)
+// ─── Flat alias builder ───────────────────────────────────────────────────────
+// Maps every new nested token to the flat key old code reads as T.xxx
 
-  // ── Social actions ─────────────────────────────────────────────────────────
-  blue:          '#3b82f6',   // comment, reply, follow, info links
-  blueLight:     '#93c5fd',   // icon tint / dark mode text on blue bg
-  blueMuted:     'rgba(59,130,246,0.12)',
+function makeFlatAliases(base: BaseTheme) {
+  const c = base.colors;
+  return {
+    // Backgrounds
+    bg:             c.bg.canvas,
+    bgCard:         c.bg.raised,
+    bgCardElevated: c.bg.raised,
+    bgInput:        c.bg.sunken,
+    bgSheet:        c.bg.raised,
+    bgOverlay:      c.bg.scrim,
+    surface:        c.bg.raised,
+    surface2:       c.bg.sunken,
+    surface3:       c.bg.overlay,
 
-  gold:          '#f59e0b',   // save, bookmark, star, notes/buy
-  goldLight:     '#fcd34d',
-  goldMuted:     'rgba(245,158,11,0.12)',
+    // Text
+    text:      c.fg.primary,
+    text2:     c.fg.secondary,
+    text3:     c.fg.tertiary,
+    textMuted: c.fg.disabled,
 
-  green:         '#22c55e',   // share, send, success, attendance ≥80%
-  greenLight:    '#86efac',
-  greenMuted:    'rgba(34,197,94,0.12)',
+    // Borders
+    border:       c.border.default,
+    borderStrong: c.border.strong,
+    borderSubtle: c.border.subtle,
 
-  purple:        '#a855f7',   // premium badge, verified, pro features
-  purpleLight:   '#d8b4fe',
-  purpleMuted:   'rgba(168,85,247,0.12)',
+    // Brand (old coral → new indigo)
+    accent:      c.brand.primary,
+    accentLight: c.brand.primaryHover,
+    accentDark:  c.brand.primaryPressed,
+    accentMuted: c.brand.primarySubtle,
+    accentText:  c.brand.onPrimary,
 
-  teal:          '#14b8a6',   // marketplace, hire, tutor, services
-  tealLight:     '#5eead4',
-  tealMuted:     'rgba(20,184,166,0.12)',
+    // Social
+    like:    c.accent.primary,
+    comment: palette.blue[500],
+    save:    palette.amber[500],
+    share:   palette.green[500],
+    follow:  palette.blue[500],
+    premium: '#A855F7',
+    market:  '#14B8A6',
+    hire:    '#14B8A6',
+    notes:   palette.amber[500],
 
-  // ── Semantic state ─────────────────────────────────────────────────────────
-  red:           '#ef4444',   // error, danger, fee due, attendance <75%
-  redLight:      '#fca5a5',
-  redMuted:      'rgba(239,68,68,0.12)',
+    // Direct palette reads
+    blue:        palette.blue[500],
+    green:       palette.green[500],
+    red:         palette.red[500],
+    gold:        palette.amber[500],
+    goldMuted:   `${palette.amber[500]}1F`,
+    purple:      '#A855F7',
+    purpleMuted: 'rgba(168,85,247,0.12)',
+    teal:        '#14B8A6',
+    tealMuted:   'rgba(20,184,166,0.12)',
 
-  amber:         '#eab308',   // warning, attendance 75–79%
-  amberLight:    '#fde047',
-  amberMuted:    'rgba(234,179,8,0.12)',
+    // Feedback
+    success:      c.feedback.success,
+    successMuted: c.feedback.successSubtle,
+    warning:      c.feedback.warning,
+    warningMuted: c.feedback.warningSubtle,
+    error:        c.feedback.error,
+    errorMuted:   c.feedback.errorSubtle,
+    info:         c.feedback.info,
+    infoMuted:    c.feedback.infoSubtle,
 
-  // ── Always-fixed ───────────────────────────────────────────────────────────
-  white:         '#ffffff',
-  black:         '#000000',
-  transparent:   'transparent',
-} as const;
+    // Attendance
+    attGood:   c.feedback.success,
+    attWarn:   c.feedback.warning,
+    attDanger: c.feedback.error,
 
-// ─── Dark palette ─────────────────────────────────────────────────────────────
-const dark = {
-  // Base
-  bg:             '#000000',
-  bgCard:         '#111111',
-  bgCardElevated: '#181818',
-  bgInput:        '#1c1c1c',
-  bgSheet:        '#0d0d0d',   // bottom sheets, modals
-  bgOverlay:      'rgba(0,0,0,0.72)', // modal scrim
+    // Nav
+    navBg:       c.bg.raised,
+    navBorder:   c.border.subtle,
+    navActive:   c.brand.primary,
+    navInactive: c.fg.tertiary,
 
-  // Borders
-  border:         '#2a2a2a',
-  borderStrong:   '#3d3d3d',
-  borderSubtle:   '#1a1a1a',
+    // Fixed
+    white:       palette.neutral[0]    as string,
+    black:       palette.neutral[1000] as string,
+    transparent: 'transparent'         as const,
 
-  // Text
-  text:           '#ffffff',        // headings, primary labels
-  text2:          '#c8c8c8',        // body text, descriptions
-  text3:          '#707070',        // captions, timestamps, meta
-  textMuted:      '#383838',        // placeholders, disabled
-
-  // Nav
-  navBg:          'rgba(0,0,0,0.94)',
-  navBorder:      'rgba(255,255,255,0.06)',
-  navActive:      colors.coral,
-  navInactive:    '#555555',
-
-  // Accent (coral)
-  accent:         colors.coral,
-  accentLight:    colors.coralLight,
-  accentDark:     colors.coralDark,
-  accentMuted:    'rgba(216,90,48,0.15)',
-  accentText:     '#ffffff',
-
-  // Surface aliases (for components that reference 'surface')
-  surface:        '#111111',
-  surface2:       '#1c1c1c',
-  surface3:       '#242424',
-
-  // Social
-  like:           colors.coral,
-  comment:        colors.blue,
-  save:           colors.gold,
-  share:          colors.green,
-  follow:         colors.blue,
-  premium:        colors.purple,
-  market:         colors.teal,
-  hire:           colors.teal,
-  notes:          colors.gold,
-
-  // Semantic
-  success:        colors.green,
-  successMuted:   colors.greenMuted,
-  warning:        colors.amber,
-  warningMuted:   colors.amberMuted,
-  error:          colors.red,
-  errorMuted:     colors.redMuted,
-  info:           colors.blue,
-  infoMuted:      colors.blueMuted,
-
-  // Attendance
-  attGood:        colors.green,     // ≥ 80%
-  attWarn:        colors.amber,     // 75–79%
-  attDanger:      colors.red,       // < 75%
-
-  isDark: true,
-} as const;
-
-// ─── Light palette ────────────────────────────────────────────────────────────
-const light = {
-  // Base
-  bg:             '#ffffff',
-  bgCard:         '#f5f5f5',
-  bgCardElevated: '#ffffff',
-  bgInput:        '#ebebeb',
-  bgSheet:        '#ffffff',
-  bgOverlay:      'rgba(0,0,0,0.40)',
-
-  // Borders
-  border:         '#e2e2e2',
-  borderStrong:   '#c8c8c8',
-  borderSubtle:   '#f0f0f0',
-
-  // Text
-  text:           '#0a0a0a',
-  text2:          '#3d3d3d',
-  text3:          '#888888',
-  textMuted:      '#c4c4c4',
-
-  // Nav
-  navBg:          'rgba(255,255,255,0.94)',
-  navBorder:      'rgba(0,0,0,0.06)',
-  navActive:      colors.coral,
-  navInactive:    '#c4c4c4',
-
-  // Accent (coral)
-  accent:         colors.coral,
-  accentLight:    colors.coralLight,
-  accentDark:     colors.coralDark,
-  accentMuted:    'rgba(216,90,48,0.10)',
-  accentText:     '#ffffff',
-
-  // Surface aliases
-  surface:        '#ffffff',
-  surface2:       '#ebebeb',
-  surface3:       '#f5f5f5',
-
-  // Social
-  like:           colors.coral,
-  comment:        colors.blue,
-  save:           colors.gold,
-  share:          colors.green,
-  follow:         colors.blue,
-  premium:        colors.purple,
-  market:         colors.teal,
-  hire:           colors.teal,
-  notes:          colors.gold,
-
-  // Semantic
-  success:        colors.green,
-  successMuted:   colors.greenMuted,
-  warning:        colors.amber,
-  warningMuted:   colors.amberMuted,
-  error:          colors.red,
-  errorMuted:     colors.redMuted,
-  info:           colors.blue,
-  infoMuted:      colors.blueMuted,
-
-  // Attendance
-  attGood:        colors.green,
-  attWarn:        colors.amber,
-  attDanger:      colors.red,
-
-  isDark: false,
-} as const;
-
-// ─── Theme type ───────────────────────────────────────────────────────────────
-export type Theme = typeof dark;
-export type ThemeColors = keyof Theme;
-
-// ─── Resolver ─────────────────────────────────────────────────────────────────
-export function getTheme(scheme: ColorSchemeName): Theme {
-  return scheme === 'dark' ? dark : light;
+    // Mode flag
+    isDark: base.mode === 'dark',
+  };
 }
 
-// ─── Typography ───────────────────────────────────────────────────────────────
+// ─── Extended Theme type ──────────────────────────────────────────────────────
+type FlatAliases = ReturnType<typeof makeFlatAliases>;
+export type Theme = BaseTheme & FlatAliases;
+
+// Build once as stable singletons — no object creation on every getTheme() call
+const _light: Theme = Object.assign({}, lightTheme, makeFlatAliases(lightTheme));
+const _dark:  Theme = Object.assign({}, darkTheme,  makeFlatAliases(darkTheme));
+
+// ─── getTheme ─────────────────────────────────────────────────────────────────
+export function getTheme(scheme: ColorSchemeName): Theme {
+  return scheme === 'dark' ? _dark : _light;
+}
+
+// ─── Named token exports ──────────────────────────────────────────────────────
+// import { fonts, fontSizes, spacing, radii, shadows, colors } from '../../theme/theme'
+
 export const fonts = {
-  regular:  'Inter-Regular',
-  medium:   'Inter-Medium',
-  semibold: 'Inter-SemiBold',
-  bold:     'Inter-Bold',
+  regular:  fontFamily.body,
+  medium:   fontFamily.bodyMedium,
+  semibold: fontFamily.bodySemibold,
+  bold:     fontFamily.bodyBold,
 } as const;
 
 export const fontSizes = {
@@ -214,98 +148,102 @@ export const fontSizes = {
   xxl:  22,
   hero: 28,
   mega: 36,
+  giga: 48,
 } as const;
 
-export const lineHeights = {
-  tight:  1.2,
-  snug:   1.35,
-  normal: 1.5,
-  relaxed:1.65,
-} as const;
-
-// ─── Spacing ──────────────────────────────────────────────────────────────────
 export const spacing = {
-  xxs:  2,
-  xs:   4,
-  sm:   8,
-  md:   12,
-  base: 16,
-  lg:   20,
-  xl:   24,
-  xxl:  32,
-  xxxl: 48,
+  none:  0,
+  xxs:   2,
+  xs:    space.xxs,    // 4
+  sm:    space.xs,     // 8
+  md:    12,
+  base:  space.md,     // 16
+  lg:    20,
+  xl:    space.xl,     // 32
+  xxl:   space['2xl'], // 48
+  xxxl:  space['3xl'], // 64
+  '4xl': space['4xl'], // 96
 } as const;
 
-// ─── Border radii ─────────────────────────────────────────────────────────────
 export const radii = {
-  xs:   4,
-  sm:   8,
-  md:   10,
-  lg:   14,
-  xl:   18,
-  xxl:  24,
-  pill: 999,
+  xs:   radius.xs,
+  sm:   radius.sm,
+  md:   radius.md,
+  lg:   radius.lg,
+  xl:   radius.xl,
+  xxl:  radius['2xl'],
+  pill: radius.full,
 } as const;
 
-// ─── Shadows (for elevated cards — light mode only, transparent on dark) ──────
 export const shadows = {
-  sm: {
-    shadowColor:   '#000',
-    shadowOffset:  { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius:  3,
-    elevation:     2,
-  },
-  md: {
-    shadowColor:   '#000',
-    shadowOffset:  { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius:  8,
-    elevation:     4,
-  },
-  lg: {
-    shadowColor:   '#000',
-    shadowOffset:  { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius:  16,
-    elevation:     8,
-  },
+  sm: elevation.sm,
+  md: elevation.md,
+  lg: elevation.lg,
 } as const;
 
-// ─── Z-index scale ────────────────────────────────────────────────────────────
-export const zIndex = {
-  base:    0,
-  card:    10,
-  header:  20,
-  drawer:  30,
-  modal:   40,
-  toast:   50,
-  overlay: 60,
+export const colors = {
+  coral:        palette.indigo[500],
+  coralLight:   palette.indigo[400],
+  coralDark:    palette.indigo[700],
+  coralMuted:   `${palette.indigo[500]}1F`,
+  blue:         palette.blue[500],
+  blueLight:    palette.blue[300],
+  blueMuted:    `${palette.blue[500]}1F`,
+  gold:         palette.amber[500],
+  goldLight:    palette.amber[300],
+  goldMuted:    `${palette.amber[500]}1F`,
+  green:        palette.green[500],
+  greenLight:   palette.green[300],
+  greenMuted:   `${palette.green[500]}1F`,
+  purple:       '#A855F7',
+  purpleLight:  '#D8B4FE',
+  purpleMuted:  'rgba(168,85,247,0.12)',
+  teal:         '#14B8A6',
+  tealLight:    '#5EEAD4',
+  tealMuted:    'rgba(20,184,166,0.12)',
+  red:          palette.red[500],
+  redLight:     palette.red[300],
+  redMuted:     `${palette.red[500]}1F`,
+  amber:        palette.amber[500],
+  amberLight:   palette.amber[300],
+  amberMuted:   `${palette.amber[500]}1F`,
+  white:        palette.neutral[0],
+  black:        palette.neutral[1000],
+  transparent:  'transparent' as const,
 } as const;
 
-// ─── Attendance helpers ───────────────────────────────────────────────────────
+// Re-export new tokens for any file that needs them directly
+export {
+  fontFamily, fontWeight, textStyles,
+  space, radius, elevation,
+  duration, easing, spring,
+  zIndex, iconSize,
+  palette, gradients,
+};
+
+export type { BaseTheme };
+
+// ─── Domain types & helpers ───────────────────────────────────────────────────
+export type ServiceType = 'notes' | 'tutor' | 'assignment' | 'hire' | 'item';
+export type MemberTier  = 'free' | 'premium' | 'pro';
+export type FeeStatus   = 'paid' | 'due' | 'overdue';
+export type ResultGrade = 'A' | 'B' | 'C' | 'D' | 'F';
+
 export function attendancePct(attended: number, held: number): number {
   if (!held) return 0;
   return Math.round((attended / held) * 100);
 }
-
-export function attColor(pct: number, theme: Theme): string {
-  if (pct >= 80) return theme.attGood;
-  if (pct >= 75) return theme.attWarn;
-  return theme.attDanger;
+export function attColor(pct: number, t: Theme): string {
+  if (pct >= 80) return t.attGood;
+  if (pct >= 75) return t.attWarn;
+  return t.attDanger;
 }
-
-/** How many consecutive classes needed to reach 75% */
 export function neededClasses(attended: number, held: number): number {
   return Math.max(0, Math.ceil(3 * held - 4 * attended));
 }
-
-/** How many classes can be safely skipped while staying ≥75% */
 export function canMissClasses(attended: number, held: number): number {
   return Math.max(0, Math.floor(4 * attended - 3 * held));
 }
-
-// ─── Date / time helpers ──────────────────────────────────────────────────────
 export function getGreeting(): string {
   const h = new Date().getHours();
   if (h < 5)  return 'Up late';
@@ -313,59 +251,42 @@ export function getGreeting(): string {
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
 }
-
 export function getDay(): string {
   return new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month:   'long',
-    day:     'numeric',
+    weekday: 'long', month: 'long', day: 'numeric',
   });
 }
-
 export function timeAgo(dateStr: string): string {
   if (!dateStr) return '';
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-  if (diff < 60)    return 'just now';
-  if (diff < 3600)  return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  if (diff < 604800)return `${Math.floor(diff / 86400)}d`;
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric',
-  });
+  if (diff < 60)     return 'just now';
+  if (diff < 3600)   return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400)  return `${Math.floor(diff / 3600)}h`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
-
 export function formatCurrency(amount: number, currency = 'PKR'): string {
   return new Intl.NumberFormat('en-PK', {
-    style:    'currency',
-    currency,
-    maximumFractionDigits: 0,
+    style: 'currency', currency, maximumFractionDigits: 0,
   }).format(amount);
 }
-
-// ─── Market / badge helpers ───────────────────────────────────────────────────
-export type ServiceType = 'notes' | 'tutor' | 'assignment' | 'hire' | 'item';
-
-export function serviceColor(type: ServiceType, theme: Theme): string {
+export function serviceColor(type: ServiceType, t: Theme): string {
   switch (type) {
-    case 'notes':      return theme.notes;
-    case 'tutor':      return theme.hire;
-    case 'assignment': return theme.hire;
-    case 'hire':       return theme.market;
-    case 'item':       return theme.accent;
-    default:           return theme.accent;
+    case 'notes':
+    case 'tutor':
+    case 'assignment': return t.info;
+    case 'hire':
+    case 'item':
+    default:           return t.accent;
   }
 }
-
-export type MemberTier = 'free' | 'premium' | 'pro';
-
-export function tierColor(tier: MemberTier, theme: Theme): string {
+export function tierColor(tier: MemberTier, t: Theme): string {
   switch (tier) {
-    case 'premium': return theme.premium;
-    case 'pro':     return colors.gold;
-    default:        return theme.text3;
+    case 'premium': return t.premium;
+    case 'pro':     return t.gold;
+    default:        return t.text3;
   }
 }
-
 export function tierLabel(tier: MemberTier): string {
   switch (tier) {
     case 'premium': return 'Premium';
@@ -373,26 +294,19 @@ export function tierLabel(tier: MemberTier): string {
     default:        return 'Free';
   }
 }
-
-// ─── Fee / result status helpers ──────────────────────────────────────────────
-export type FeeStatus = 'paid' | 'due' | 'overdue';
-
-export function feeColor(status: FeeStatus, theme: Theme): string {
+export function feeColor(status: FeeStatus, t: Theme): string {
   switch (status) {
-    case 'paid':    return theme.success;
-    case 'due':     return theme.warning;
-    case 'overdue': return theme.error;
+    case 'paid':    return t.success;
+    case 'due':     return t.warning;
+    case 'overdue': return t.error;
   }
 }
-
-export type ResultGrade = 'A' | 'B' | 'C' | 'D' | 'F';
-
-export function gradeColor(grade: ResultGrade, theme: Theme): string {
+export function gradeColor(grade: ResultGrade, t: Theme): string {
   switch (grade) {
-    case 'A': return theme.success;
-    case 'B': return theme.info;
-    case 'C': return theme.warning;
-    case 'D': return theme.warning;
-    case 'F': return theme.error;
+    case 'A': return t.success;
+    case 'B': return t.info;
+    case 'C':
+    case 'D': return t.warning;
+    case 'F': return t.error;
   }
 }

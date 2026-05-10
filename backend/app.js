@@ -35,7 +35,7 @@ app.use(morgan('combined', {
 // ── Global rate limiter ───────────────────────────────────────────────────────
 app.use(rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max:      parseInt(process.env.RATE_LIMIT_MAX)        || 100,
+  max:      parseInt(process.env.RATE_LIMIT_MAX)       || 100,
   message:  { success: false, message: 'Too many requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders:   false,
@@ -47,13 +47,15 @@ app.get('/health', (req, res) => {
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.use('/api/auth',    require('./src/routes/auth.routes'));
-app.use('/api/users',   require('./src/routes/user.routes'));
-app.use('/api/posts',   require('./src/routes/post.routes'));
-app.use('/api/market',  require('./src/routes/market.routes'));
-app.use('/api/services',require('./src/routes/service.routes'));
-app.use('/api/chats',   require('./src/routes/chat.routes'));
-app.use('/api/upload',  require('./src/routes/upload.routes'));
+app.use('/api/auth',        require('./src/routes/auth.routes'));
+app.use('/api/users',       require('./src/routes/user.routes'));
+app.use('/api/posts',       require('./src/routes/post.routes'));
+app.use('/api/collections', require('./src/routes/collection.routes')); // <-- ADDED THIS LINE
+app.use('/api/market',      require('./src/routes/market.routes'));
+app.use('/api/services',    require('./src/routes/service.routes'));
+app.use('/api/chats',       require('./src/routes/chat.routes'));
+app.use('/api/upload',      require('./src/routes/upload.routes'));
+app.use('/api/stories',     require('./src/routes/story.routes'));
 
 // ── Debug routes (dev only — remove before production) ────────────────────────
 if (process.env.NODE_ENV !== 'production') {

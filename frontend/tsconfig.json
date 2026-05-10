@@ -3,9 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@qaaf/theme": ["./src/theme/src/index.ts"]
     }
   },
   "include": [

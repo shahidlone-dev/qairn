@@ -1,229 +1,287 @@
 // src/screens/campus/CampusScreen.tsx
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-  Pressable,
+  View, Text, StyleSheet, TouchableOpacity,
+  ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
-import { getTheme, fonts, fontSizes, spacing, radii } from '../../theme/theme';
-import { Avatar }            from '../../components/ui';
-import { PostCard }          from '../../components/campus/PostCard';
-import { CampusFAB }         from '../../components/campus/CampusFAB';
-import { NavigationDrawer }  from '../../components/navigation/NavigationDrawer';
-import { MOCK_POSTS, CURRENT_USER, Post } from '../../constants/mockFeed';
-import { MainTabScreenProps } from '../../types/navigation';
+import Animated, {
+  useSharedValue, useAnimatedScrollHandler, runOnJS,
+} from 'react-native-reanimated';
 
-type Props      = MainTabScreenProps<'Campus'>;
+import { getTheme, fonts, fontSizes, spacing } from '../../types/theme';
+import { PostCard } from '../../components/campus/PostCard';
+import { CampusFAB } from '../../components/campus/CampusFAB';
+import { CampusHeader } from '../../components/campus/CampusHeader';
+import { NavigationDrawer } from '../../components/navigation/NavigationDrawer';
+import { GlobalMediaViewer, GlobalMediaData } from '../../components/campus/GlobalMediaViewer';
+import { VideoPlaybackContext } from '../../context/VideoPlaybackContext';
+import { useScrollSignal } from '../../context/ScrollContext';
+import { useAuth } from '../../hooks/useAuth';
+import { useFeed } from '../../hooks/useFeed';
+import { useFeedEngine } from '../../hooks/useFeedEngine';
+import { usePostStore } from '../../store/usePostStore';
+import { useStoryStore } from '../../store/useStoryStore';
+import { MainTabScreenProps } from '../../types/navigation';
+import type { Post as ApiPost } from '../../types/api.types';
+
+type Props = MainTabScreenProps<'Campus'>;
 type FeedFilter = 'forYou' | 'myCircle';
+
+const FeedEmpty = ({ T }: { T: ReturnType<typeof getTheme> }) => (
+  <View style={styles.emptyWrap}>
+    <Ionicons name="newspaper-outline" size={48} color={T.text3} />
+    <Text style={{ color: T.text, fontFamily: fonts.semibold, fontSize: fontSizes.md, marginTop: spacing.sm }}>
+      Nothing here yet
+    </Text>
+    <Text style={{ color: T.text3, fontFamily: fonts.regular, fontSize: fontSizes.sm, textAlign: 'center' }}>
+      Follow people or create a post to get started
+    </Text>
+  </View>
+);
+
+type MediaState = {
+  visible:      boolean;
+  data:         GlobalMediaData[];
+  initialIndex: number;
+};
 
 export const CampusScreen: React.FC<Props> = ({ navigation }) => {
   const T      = getTheme(useColorScheme());
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState<FeedFilter>('forYou');
-  const [dropOpen,   setDropOpen]   = useState(false);
-
   const fabCloseRef = useRef<(() => void) | null>(null);
 
-  const posts: Post[] = feedFilter === 'myCircle'
-    ? MOCK_POSTS.filter(p => p.inCircle)
-    : MOCK_POSTS;
+  const [mediaState, setMediaState] = useState<MediaState>({
+    visible: false, data: [], initialIndex: 0,
+  });
 
-  // ── Close FAB on ANY scroll movement ───────────────────────────
-  const handleScroll = useCallback(() => {
+  const [isMuted, setIsMuted] = useState(true);
+
+  // ── Feed data ──────────────────────────────────────────────────────────────
+  const { feedIds, isLoading, isRefreshing, isFetchingMore, error, refresh, loadMore } =
+    useFeed(feedFilter);
+
+  // ── Story feed (rings on the rail + viewed-state mirror) ──────────────────
+  // Refreshes on initial mount and whenever the post feed is pulled-to-refresh,
+  // so the user's own ring lights up after they post a story and other users'
+  // rings stay in sync. Failures are swallowed inside the store.
+  const refreshStories = useStoryStore(s => s.refreshFeed);
+  useEffect(() => {
+    refreshStories();
+  }, [refreshStories]);
+  useEffect(() => {
+    if (isRefreshing) refreshStories();
+  }, [isRefreshing, refreshStories]);
+
+  // ── Feed engine ────────────────────────────────────────────────────────────
+  const {
+    activePostId,
+    nextPostId,
+    viewabilityConfig,
+    onViewableItemsChanged,
+  } = useFeedEngine(feedIds);
+
+  // ── Playback context ───────────────────────────────────────────────────────
+  const playbackCtx = useMemo(() => ({
+    activePostId: mediaState.visible ? null : activePostId,
+    nextPostId:   mediaState.visible ? null : nextPostId,
+    isMuted,
+    setMuted: (m: boolean) => setIsMuted(m),
+  }), [activePostId, nextPostId, isMuted, mediaState.visible]);
+
+  // ── Scroll handler ─────────────────────────────────────────────────────────
+  //
+  // Reanimated v3 worklet rules followed here:
+  //   - runOnJS() only receives named useCallback refs — never inline arrows.
+  //     Inline arrows are recreated on every render; Reanimated cannot marshal
+  //     them safely to the JS thread and crashes on scroll.
+  //   - Date.now() is not available inside worklets. Removed entirely.
+  //   - Worklet body only does: shared value writes + runOnJS(stableRef)().
+  //
+  const isScrollingDown = useScrollSignal();
+  const lastScrollY     = useSharedValue(0);
+
+  // Must be defined with useCallback BEFORE scrollHandler reads them
+  const handleFabClose = useCallback(() => {
     fabCloseRef.current?.();
   }, []);
 
-  // ── Empty state ────────────────────────────────────────────────────────────
-  const Empty = () => (
-    <View style={styles.empty}>
-      <Ionicons name="people-outline" size={48} color={T.text3} />
-      <Text style={[{ color: T.text, fontFamily: fonts.semibold, fontSize: fontSizes.lg, textAlign: 'center' }]}>
-        Your circle is quiet
-      </Text>
-      <Text style={[{ color: T.text3, fontFamily: fonts.regular, fontSize: fontSizes.md, textAlign: 'center', lineHeight: 22 }]}>
-        Add people to your circle to see their posts here.
-      </Text>
-    </View>
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      const y = event.contentOffset.y;
+      if (y < 0) return;
+
+      if (y > lastScrollY.value + 5)      isScrollingDown.value = true;
+      else if (y < lastScrollY.value - 5) isScrollingDown.value = false;
+
+      lastScrollY.value = y;
+
+      // Only pass a stable named function to runOnJS — never an inline arrow
+      runOnJS(handleFabClose)();
+    },
+  });
+
+  const handleFabRegister = useCallback((fn: () => void) => {
+    fabCloseRef.current = fn;
+  }, []);
+
+  // ── Open media viewer ──────────────────────────────────────────────────────
+  // - Videos open the in-place reels-style modal (GlobalMediaViewer).
+  // - Images navigate to a dedicated PostImageViewer stack screen.
+  const handleOpenMedia = useCallback((tappedId: string) => {
+    const state      = usePostStore.getState();
+    const tappedPost = state.postsById[tappedId];
+    if (!tappedPost?.media_url || !tappedPost.media_type) return;
+
+    if (tappedPost.media_type === 'image') {
+      navigation.navigate('PostImageViewer', { postId: tappedId });
+      return;
+    }
+
+    // Video → reels-style vertical pager built from all videos in the feed.
+    const realIds = feedIds.filter(id => !id.startsWith('pending_'));
+    const videoPosts = realIds
+      .map(id => state.postsById[id])
+      .filter((p): p is ApiPost => !!p && p.media_type === 'video' && !!p.media_url);
+    const startIndex = videoPosts.findIndex(p => p.id === tappedId);
+    setMediaState({
+      visible:      true,
+      initialIndex: Math.max(0, startIndex),
+      data:         videoPosts.map(p => ({ uri: p.media_url!, postId: p.id })),
+    });
+  }, [feedIds, navigation]);
+
+  const handleCloseMedia = useCallback(() => {
+    setMediaState(p => ({ ...p, visible: false }));
+  }, []);
+
+  // renderItem deps: only re-creates when active/next post or handler changes
+  const renderItem = useCallback(({ item: id }: { item: string }) => (
+    <PostCard
+      postId={id}
+      onOpenMedia={() => handleOpenMedia(id)}
+      isVisible={id === activePostId || id === nextPostId}
+    />
+  ), [activePostId, nextPostId, handleOpenMedia]);
+
+  const keyExtractor = useCallback((id: string) => id, []);
+
+  if (isLoading) return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: T.bg }]} edges={['top']}>
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={T.accent} />
+      </View>
+    </SafeAreaView>
   );
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: T.bg }]} edges={['top']}>
+    <VideoPlaybackContext.Provider value={playbackCtx}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: T.bg }]} edges={['left', 'right', 'bottom']}>
 
-      {/* ── Header ────────────────────────────────────────────────────────── */}
-      <View style={[styles.header, { borderBottomColor: T.border, backgroundColor: T.bg }]}>
-        <TouchableOpacity
-          onPress={() => setDrawerOpen(true)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="menu" size={24} color={T.text} />
-        </TouchableOpacity>
+        <View style={{
+          position: 'absolute', top: 0, left: 0, right: 0,
+          height: insets.top, backgroundColor: T.bg, zIndex: 105,
+        }} />
 
-        <TouchableOpacity
-          style={styles.userPill}
-          onPress={() => setDropOpen(p => !p)}
-          activeOpacity={0.8}
-        >
-          <Text style={[{ color: T.text, fontFamily: fonts.bold, fontSize: fontSizes.md }]}>
-            @{CURRENT_USER.username}
-          </Text>
-          <Ionicons
-            name={dropOpen ? 'chevron-up' : 'chevron-down'}
-            size={14}
-            color={T.text3}
-            style={{ marginLeft: 3 }}
-          />
-        </TouchableOpacity>
+        <CampusHeader
+          T={T}
+          user={user}
+          feedFilter={feedFilter}
+          setFeedFilter={setFeedFilter}
+          onMenuPress={() => setDrawerOpen(true)}
+          onSearchPress={() => navigation.navigate('Search')}
+          onProfilePress={() => user && navigation.navigate('Profile', { userId: user.id })}
+          isScrollingDown={isScrollingDown}
+        />
 
-<View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-  <TouchableOpacity
-    onPress={() => navigation.navigate('Search')}
-    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-  >
-    <Ionicons name="search-outline" size={22} color={T.text} />
-  </TouchableOpacity>
-
-  <TouchableOpacity
-    onPress={() => navigation.navigate('Notifications')}
-    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-  >
-    <Ionicons name="notifications-outline" size={22} color={T.text} />
-  </TouchableOpacity>
-
-  <TouchableOpacity
-    onPress={() => navigation.navigate('Profile', { userId: CURRENT_USER.id })}
-  >
-    <Avatar name={CURRENT_USER.name} uri={CURRENT_USER.avatar} size="sm" />
-  </TouchableOpacity>
-</View>
-      </View>
-
-      {/* ── Dropdown Modal ─────────────────────────────────────────────────── */}
-      <Modal visible={dropOpen} transparent animationType="fade" onRequestClose={() => setDropOpen(false)}>
-        <Pressable style={styles.dropScrim} onPress={() => setDropOpen(false)}>
-          <View style={[styles.dropdown, { backgroundColor: T.bgCard, borderColor: T.border, top: insets.top + 55 }]}>
-            {[
-              { key: 'forYou',   label: 'For You'   },
-              { key: 'myCircle', label: 'My Circle' },
-            ].map((opt, i, arr) => {
-              const active = feedFilter === opt.key;
-              return (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[
-                    styles.dropItem,
-                    i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: T.borderSubtle },
-                    active && { backgroundColor: T.accentMuted },
-                  ]}
-                  onPress={() => { setFeedFilter(opt.key as FeedFilter); setDropOpen(false); }}
-                  activeOpacity={0.8}
-                >
-                  {active && (
-                    <Ionicons name="checkmark" size={16} color={T.accent} style={{ marginRight: 8 }} />
-                  )}
-                  <Text style={[{
-                    color:      active ? T.accent : T.text,
-                    fontFamily: active ? fonts.semibold : fonts.medium,
-                    fontSize:   fontSizes.md,
-                    marginLeft: active ? 0 : 24 // Keep text aligned even if no checkmark
-                  }]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </Pressable>
-      </Modal>
-
-      {/* ── Feed ──────────────────────────────────────────────────────────── */}
-      <FlatList
-        data={posts}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <PostCard
-            post={item}
-            onPress={() => navigation.navigate('PostDetail', { postId: item.id })}
-          />
+        {!!error && (
+          <TouchableOpacity
+            style={[styles.errorBanner, { backgroundColor: T.errorMuted, marginTop: insets.top + 60 }]}
+            onPress={refresh}
+          >
+            <Ionicons name="alert-circle-outline" size={14} color={T.error} />
+            <Text style={{ color: T.error, fontFamily: fonts.medium, fontSize: fontSizes.sm, marginLeft: 6 }}>
+              {error} · Tap to retry
+            </Text>
+          </TouchableOpacity>
         )}
-        ListEmptyComponent={<Empty />}
-        showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        contentContainerStyle={{ paddingBottom: 120 }} // FIX: Prevents FAB from blocking bottom post
-      />
 
-      {/* ── FAB ───────────────────────────────────────────────────────────── */}
-      <CampusFAB
-        bottomOffset={insets.bottom}
-        onRegisterClose={(fn) => { fabCloseRef.current = fn; }}
-      />
+        <Animated.FlatList
+          data={feedIds}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
 
-      {/* ── Navigation Drawer ─────────────────────────────────────────────── */}
-      <NavigationDrawer
-        visible={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        onNavigate={(screen) => {
-          if (screen === 'Profile')       navigation.navigate('Profile', { userId: CURRENT_USER.id });
-          if (screen === 'Notifications') navigation.navigate('Notifications');
-          if (screen === 'Settings')      navigation.navigate('Settings');
-        }}
-      />
-    </SafeAreaView>
+          viewabilityConfig={viewabilityConfig.current}
+          onViewableItemsChanged={onViewableItemsChanged.current}
+
+          removeClippedSubviews={Platform.OS === 'android'}
+          maxToRenderPerBatch={5}
+          windowSize={7}
+          initialNumToRender={4}
+          updateCellsBatchingPeriod={50}
+          decelerationRate="fast"
+
+          ListEmptyComponent={<FeedEmpty T={T} />}
+          ListFooterComponent={
+            isFetchingMore
+              ? <View style={styles.footerLoader}><ActivityIndicator size="small" color={T.accent} /></View>
+              : null
+          }
+          showsVerticalScrollIndicator={false}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          contentContainerStyle={{
+            paddingTop:    insets.top + (Platform.OS === 'ios' ? 55 : 70),
+            paddingBottom: insets.bottom + 120,
+          }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={refresh}
+              tintColor={T.accent}
+              colors={[T.accent]}
+              progressViewOffset={insets.top + 60}
+            />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+        />
+
+        <CampusFAB
+          bottomOffset={insets.bottom}
+          onRegisterClose={handleFabRegister}
+          isScrollingDown={isScrollingDown}
+        />
+
+        <NavigationDrawer
+          visible={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          onNavigate={() => {}}
+        />
+
+        <GlobalMediaViewer
+          visible={mediaState.visible}
+          data={mediaState.data}
+          initialIndex={mediaState.initialIndex}
+          onClose={handleCloseMedia}
+        />
+
+      </SafeAreaView>
+    </VideoPlaybackContext.Provider>
   );
 };
 
 const styles = StyleSheet.create({
-  safe:     { flex: 1 },
-  header:   {
-    flexDirection:     'row',
-    alignItems:        'center',
-    justifyContent:    'space-between',
-    paddingHorizontal: spacing.base,
-    paddingVertical:   spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    zIndex:            10, // Ensure header is above list content
-  },
-  userPill: { flexDirection: 'row', alignItems: 'center' },
-  
-  dropScrim: { 
-    flex: 1, 
-    backgroundColor: 'rgba(0,0,0,0.02)' 
-  },
-  dropdown: {
-    position:      'absolute',
-    alignSelf:     'center',
-    width:         180,
-    borderRadius:  radii.lg,
-    borderWidth:   StyleSheet.hairlineWidth,
-    overflow:      'hidden',
-    shadowColor:   '#000',
-    shadowOffset:  { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius:  12,
-    elevation:     8,
-  },
-  dropItem: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    paddingHorizontal: spacing.base,
-    paddingVertical:   spacing.md,
-  },
-  
-  empty: {
-    alignItems:     'center',
-    justifyContent: 'center',
-    padding:        spacing.xxl,
-    gap:            spacing.md,
-    marginTop:      80,
-  },
+  safe:         { flex: 1 },
+  center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  errorBanner:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.sm },
+  footerLoader: { paddingVertical: spacing.xl, alignItems: 'center' },
+  emptyWrap:    { alignItems: 'center', gap: spacing.sm, padding: spacing.xl, paddingTop: 80 },
 });

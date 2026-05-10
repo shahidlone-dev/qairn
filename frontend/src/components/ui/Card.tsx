@@ -7,7 +7,7 @@ import {
   TouchableOpacityProps,
 } from 'react-native';
 import { useColorScheme } from 'react-native';
-import { getTheme, radii, spacing, shadows } from '../../theme/theme';
+import { getTheme, radii, spacing, shadows } from '../../types/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type CardVariant = 'default' | 'elevated' | 'outline' | 'ghost' | 'accent';

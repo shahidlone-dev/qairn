@@ -13,29 +13,36 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
-import { getTheme, fonts, fontSizes, spacing, radii } from '../../theme/theme';
+import { getTheme, fonts, fontSizes, spacing, radii } from '../../types/theme';
+import { usePostActions } from '../../hooks/usePostActions';
 
 type SheetOption = {
-  icon:    keyof typeof Ionicons.glyphMap;
-  label:   string;
-  color?:  string;
+  icon:     keyof typeof Ionicons.glyphMap;
+  label:    string;
+  color?:   string;
+  onPress?: () => void;
 };
 
 interface Props {
-  visible:  boolean;
-  onClose:  () => void;
-  inCircle: boolean;
-  username: string;
+  visible:   boolean;
+  onClose:   () => void;
+  postId:    string;           // ✅ needed to call deletePost
+  isOwner:   boolean;          // ✅ replaces `inCircle` — caller knows this
+  inCircle:  boolean;
+  username:  string;
 }
 
 export const PostOptionsSheet: React.FC<Props> = ({
   visible,
   onClose,
+  postId,
+  isOwner,
   inCircle,
   username,
 }) => {
   const T      = getTheme(useColorScheme());
   const insets = useSafeAreaInsets();
+  const { deletePost } = usePostActions();
 
   const slideY  = useRef(new Animated.Value(400)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -62,13 +69,36 @@ export const PostOptionsSheet: React.FC<Props> = ({
     }
   }, [visible]);
 
-  const options: SheetOption[] = [
-    { icon: 'eye-off-outline',   label: 'Not interested'              },
-    ...(!inCircle ? [{ icon: 'person-add-outline' as keyof typeof Ionicons.glyphMap, label: `Add @${username} to circle`, color: T.accent }] : []),
-    { icon: 'volume-mute-outline', label: `Mute @${username}`         },
-    { icon: 'flag-outline',       label: 'Report post', color: T.warning },
-    { icon: 'ban-outline',        label: `Block @${username}`, color: T.error },
+  // ✅ FIX: Two distinct option sets — owner sees Edit/Delete, strangers see report/block
+  const ownerOptions: SheetOption[] = [
+    {
+      icon:    'trash-outline',
+      label:   'Delete post',
+      color:   T.error,
+      onPress: () => {
+        onClose();
+        // Small delay so sheet closes before Alert appears
+        setTimeout(() => deletePost(postId), 300);
+      },
+    },
   ];
+
+  const strangerOptions: SheetOption[] = [
+    { icon: 'eye-off-outline',    label: 'Not interested',              onPress: onClose },
+    ...(!inCircle
+      ? [{
+          icon:    'person-add-outline' as keyof typeof Ionicons.glyphMap,
+          label:   `Add @${username} to circle`,
+          color:   T.accent,
+          onPress: onClose, // TODO: wire add-to-circle API
+        }]
+      : []),
+    { icon: 'volume-mute-outline', label: `Mute @${username}`,          onPress: onClose },
+    { icon: 'flag-outline',        label: 'Report post', color: T.warning, onPress: onClose },
+    { icon: 'ban-outline',         label: `Block @${username}`, color: T.error, onPress: onClose },
+  ];
+
+  const options = isOwner ? ownerOptions : strangerOptions;
 
   return (
     <Modal
@@ -107,7 +137,7 @@ export const PostOptionsSheet: React.FC<Props> = ({
               i === options.length - 1 && { borderBottomWidth: 0 },
             ]}
             activeOpacity={0.7}
-            onPress={onClose}
+            onPress={opt.onPress ?? onClose}
           >
             <View style={[
               styles.optionIcon,

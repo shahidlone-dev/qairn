@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
-import { getTheme, fonts, fontSizes, spacing, radii } from '../../theme/theme';
+import { getTheme, fonts, fontSizes, spacing, radii } from '../../types/theme';
 import { RootStackScreenProps } from '../../types/navigation';
 import AuthApi from '../../api/auth.api';
 import { ApiError } from '../../api/client';

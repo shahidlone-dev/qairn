@@ -31,25 +31,26 @@ const AuthApi = {
   },
 
   signup: async (params: { username: string; phone: string; password: string }) => {
-    const res = await api.post<{ user: User; accessToken: string; refreshToken: string }>(
-      '/auth/signup', params, false
-    );
+    type Envelope = { success: boolean; data: { user: User; accessToken: string; refreshToken: string } };
+    const res = await api.post<Envelope>('/auth/signup', params, false);
     if (!res.data) throw new Error('Signup failed');
     await TokenStore.save(res.data.accessToken, res.data.refreshToken, res.data.user.id);
     return res.data;
   },
 
   login: async (params: { identifier: string; password: string }) => {
-    const res = await api.post<{ user: User; accessToken: string; refreshToken: string }>(
-      '/auth/login', params, false
-    );
+    type Envelope = { success: boolean; data: { user: User; accessToken: string; refreshToken: string } };
+    const res = await api.post<Envelope>('/auth/login', params, false);
     if (!res.data) throw new Error('Login failed');
     await TokenStore.save(res.data.accessToken, res.data.refreshToken, res.data.user.id);
     return res.data;
   },
 
-  getMe: () =>
-    api.get<User>('/auth/me'),
+  getMe: async (): Promise<User> => {
+    // Server returns { success: true, data: User } — unwrap to the User.
+    const res = await api.get<{ success: boolean; data: User }>('/auth/me');
+    return res.data;
+  },
 
   resetPassword: (phone: string, password: string) =>
     api.post('/auth/reset-password', { phone, password }, false),

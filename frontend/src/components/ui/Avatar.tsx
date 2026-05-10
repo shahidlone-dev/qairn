@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useColorScheme } from 'react-native';
-import { getTheme, fonts, fontSizes, radii } from '../../theme/theme';
+import { getTheme, fonts, fontSizes, radii } from '../../types/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type AvatarSize  = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';

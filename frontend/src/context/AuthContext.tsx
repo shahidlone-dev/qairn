@@ -1,4 +1,10 @@
 // src/context/AuthContext.tsx
+//
+// On startup we call TokenStore.getAccess() once. That method awaits
+// ensureLoaded() internally, which performs the single disk read into
+// the in-memory cache. After this first await, every subsequent API
+// request reads the token synchronously from memory.
+
 import React, {
   createContext, useContext, useState,
   useEffect, useCallback, ReactNode,
@@ -26,29 +32,29 @@ const AuthContext = createContext<AuthState>({
 const USER_KEY = 'qaaf:user';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user,      setUserState] = useState<User | null>(null);
+  const [user,       setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ── Restore session on app start ──────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
+        // First await populates the in-memory token cache from AsyncStorage.
+        // After this point, all API calls read the token synchronously.
         const token = await TokenStore.getAccess();
         if (!token) return;
 
-        // Show cached user immediately
+        // Show cached user immediately while we re-validate in background
         const cached = await AsyncStorage.getItem(USER_KEY);
         if (cached) setUserState(JSON.parse(cached));
 
-        // Refresh from backend in background
-        const res = await AuthApi.getMe();
-        if (res.data) {
-          setUserState(res.data);
-          await AsyncStorage.setItem(USER_KEY, JSON.stringify(res.data));
+        // Re-validate session with backend
+        const fetchedUser = await AuthApi.getMe();
+        if (fetchedUser?.id) {
+          setUserState(fetchedUser);
+          await AsyncStorage.setItem(USER_KEY, JSON.stringify(fetchedUser));
         }
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
-          // Token expired and refresh failed — clear session
           await TokenStore.clear();
           await AsyncStorage.removeItem(USER_KEY);
           setUserState(null);
