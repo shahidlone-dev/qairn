@@ -1,106 +1,86 @@
-C:\Users\shahid\projects\iust\qaaf\.env
-C:\Users\shahid\projects\iust\qaaf\package-lock.json
-C:\Users\shahid\projects\iust\qaaf\package.json
-C:\Users\shahid\projects\iust\qaaf\README.md
-C:\Users\shahid\projects\iust\qaaf\structure.txt
-C:\Users\shahid\projects\iust\qaaf\backend\.env
-C:\Users\shahid\projects\iust\qaaf\backend\app.js
-C:\Users\shahid\projects\iust\qaaf\backend\package-lock.json
-C:\Users\shahid\projects\iust\qaaf\backend\package.json
-C:\Users\shahid\projects\iust\qaaf\backend\schema.sql
-C:\Users\shahid\projects\iust\qaaf\backend\server.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\config\cloudinary.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\config\redis.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\config\supabase.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\config\twilio.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\controllers\auth.controller.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\controllers\post.controller.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\controllers\upload.controller.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\controllers\user.controller.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\middleware\auth.middleware.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\middleware\rateLimit.middleware.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\middleware\upload.middleware.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\routes\auth.routes.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\routes\chat.routes.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\routes\debug.routes.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\routes\market.routes.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\routes\post.routes.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\routes\service.routes.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\routes\upload.routes.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\routes\user.routes.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\services\auth.service.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\services\bloom.service.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\services\media.service.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\services\post.service.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\services\user.service.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\utils\logger.js
-C:\Users\shahid\projects\iust\qaaf\backend\src\validations\auth.validation.js
-C:\Users\shahid\projects\iust\qaaf\frontend\.env
-C:\Users\shahid\projects\iust\qaaf\frontend\app.json
-C:\Users\shahid\projects\iust\qaaf\frontend\eslint.config.js
-C:\Users\shahid\projects\iust\qaaf\frontend\index.js
-C:\Users\shahid\projects\iust\qaaf\frontend\package-lock.json
-C:\Users\shahid\projects\iust\qaaf\frontend\package.json
-C:\Users\shahid\projects\iust\qaaf\frontend\README.md
-C:\Users\shahid\projects\iust\qaaf\frontend\tsconfig.json
-C:\Users\shahid\projects\iust\qaaf\frontend\.vscode\extensions.json
-C:\Users\shahid\projects\iust\qaaf\frontend\.vscode\settings.json
-C:\Users\shahid\projects\iust\qaaf\frontend\src\App.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\api\auth.api.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\api\chats.api.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\api\client.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\api\index.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\api\market.api.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\api\posts.api.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\api\services.api.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\api\users.api.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\campus\CampusFAB.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\campus\PostCard.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\campus\PostOptionsSheet.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\navigation\CustomTabBar.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\navigation\NavigationDrawer.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\ui\Avatar.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\ui\Badge.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\ui\Button.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\ui\Card.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\ui\index.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\ui\Input.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\components\ui\QaafPlusBadge.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\constants\mockChats.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\constants\mockFeed.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\constants\mockMarket.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\constants\mockMessages.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\constants\mockServices.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\context\AuthContext.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\hooks\index.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\hooks\useAuth.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\hooks\useChats.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\hooks\useMarket.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\hooks\useMessages.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\hooks\usePaginatedFeed.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\hooks\usePosts.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\hooks\useProfile.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\hooks\useServices.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\navigation\MainTabNavigator.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\navigation\RootNavigator.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\academics\AcademicsScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\auth\AuthScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\auth\ForgotPasswordScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\auth\OnboardingScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\auth\OtpScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\auth\ResetPasswordScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\auth\SignupCompleteScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\auth\SignupPhoneScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\campus\CampusScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\campus\CommentsScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\chats\ChatRoomScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\chats\ChatsScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\market\MarketScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\search\SearchScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\services\ServicesScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\shared\EditProfileScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\screens\shared\ProfileScreen.tsx
-C:\Users\shahid\projects\iust\qaaf\frontend\src\services\apiClient.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\theme\theme.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\types\api.types.ts
-C:\Users\shahid\projects\iust\qaaf\frontend\src\types\navigation.ts
+# Qairn
+
+Qairn is a modern campus ecosystem platform designed for students.
+
+It combines social networking, realtime communication, marketplace features, student services, and academic utilities into one unified mobile experience.
+
+Built with React Native, TypeScript, Express, Supabase, Redis, and Cloudinary.
+
+## Features
+
+- Campus social feed
+- Realtime chat system
+- Student marketplace
+- Student services
+- Authentication and onboarding
+- Profile management
+- Media uploads
+
+## Tech Stack
+
+Frontend:
+- React Native
+- TypeScript
+- Expo
+
+Backend:
+- Node.js
+- Express.js
+- Supabase
+- Redis
+- Cloudinary
+- Twilio
+
+## Architecture
+
+Frontend:
+- Feature-based folder structure
+- Reusable UI components
+- Custom hooks
+- Typed API layer
+
+Backend:
+- REST API architecture
+- Controllers and services pattern
+- JWT authentication
+- Middleware-based request handling
+
+## Setup
+
+Clone the repository:
+
+git clone https://github.com/shahidlone-dev/qairn.git
+
+Frontend:
+
+cd frontend
+npm install
+npm start
+
+Backend:
+
+cd backend
+npm install
+npm run dev
+
+## Environment Variables
+
+Create .env files inside frontend and backend directories.
+
+Example variables:
+- SUPABASE_URL
+- SUPABASE_KEY
+- JWT_SECRET
+- CLOUDINARY_CLOUD_NAME
+- TWILIO_ACCOUNT_SID
+
+## Roadmap
+
+- Realtime notifications
+- AI-powered recommendations
+- Campus events system
+- Push notifications
+
+## Author
+
+Shahid Lone
